@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>编辑奖品</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>编辑奖品</h2>
+            <a th:href="@{/reward/list}" class="btn btn-secondary">返回列表</a>
+        </div>
+
+        <form id="rewardForm" enctype="multipart/form-data" class="form">
+            <input type="hidden" name="id" th:value="${item.id}">
+
+            <div class="form-group">
+                <label>奖品名称 <span class="required">*</span></label>
+                <input type="text" name="itemName" th:value="${item.itemName}" required class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label>奖品描述</label>
+                <textarea name="itemDesc" class="form-control" rows="3" th:text="${item.itemDesc}"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>所需积分 <span class="required">*</span></label>
+                <input type="number" name="requiredPoints" th:value="${item.requiredPoints}" required class="form-control" min="1">
+                <small style="color: #6B7077;">提示：1积分 = 1元</small>
+            </div>
+
+            <div class="form-group">
+                <label>库存数量 <span class="required">*</span></label>
+                <input type="number" name="stock" th:value="${item.stock}" required class="form-control" min="0">
+            </div>
+
+            <div class="form-group">
+                <label>奖品分类</label>
+                <select name="category" class="form-control">
+                    <option value="玩具" th:selected="${item.category == '玩具'}">玩具</option>
+                    <option value="零食" th:selected="${item.category == '零食'}">零食</option>
+                    <option value="特权" th:selected="${item.category == '特权'}">特权</option>
+                    <option value="现金" th:selected="${item.category == '现金'}">现金</option>
+                    <option value="其他" th:selected="${item.category == '其他'}">其他</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>当前图片</label>
+                <div th:if="${item.imagePath}">
+                    <img th:src="@{'/upload' + ${item.imagePath}}" style="width: 150px; height: 150px; object-fit: cover;" alt="当前图片">
+                </div>
+                <div th:unless="${item.imagePath}">暂无图片</div>
+            </div>
+
+            <div class="form-group">
+                <label>更换图片</label>
+                <input type="file" name="imageFile" accept="image/*" class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label>兑换统计（只读）</label>
+                <div class="info-box">
+                    <p>兑换次数：<span th:text="${item.exchangeCount}"></span></p>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">保存</button>
+                <a th:href="@{/reward/list}" class="btn btn-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $('#rewardForm').on('submit', function(e) {
+            e.preventDefault();
+            var formData = new FormData(this);
+
+            $.ajax({
+                url: '/reward/save',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(res) {
+                    if (res.code === 200) {
+                        alert('保存成功');
+                        window.location.href = '/reward/list';
+                    } else {
+                        alert(res.message);
+                    }
+                },
+                error: function() {
+                    alert('操作失败，请稍后重试');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

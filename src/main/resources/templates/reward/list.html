@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>奖品池管理</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>奖品池管理</h2>
+            <div class="actions">
+                <a th:href="@{/reward/add}" class="btn btn-primary">添加奖品</a>
+                <a th:href="@{/}" class="btn btn-secondary">返回首页</a>
+            </div>
+        </div>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>奖品图片</th>
+                    <th>奖品名称</th>
+                    <th>描述</th>
+                    <th>所需积分</th>
+                    <th>库存</th>
+                    <th>分类</th>
+                    <th>兑换次数</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="item : ${items}">
+                    <td>
+                        <img th:if="${item.imagePath}" th:src="@{'/upload' + ${item.imagePath}}"
+                             style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;" alt="奖品图片">
+                        <span th:unless="${item.imagePath}">-</span>
+                    </td>
+                    <td th:text="${item.itemName}"></td>
+                    <td th:text="${item.itemDesc}"></td>
+                    <td class="text-bold" style="color: #3C5A78;">
+                        <span th:text="${item.requiredPoints}"></span> 分
+                    </td>
+                    <td>
+                        <span th:text="${item.stock}"></span>
+                        <a href="javascript:void(0);" th:onclick="'updateStock(' + ${item.id} + ',' + ${item.stock} + ')'"
+                           class="btn-link" style="margin-left: 5px;">修改</a>
+                    </td>
+                    <td th:text="${item.category}"></td>
+                    <td th:text="${item.exchangeCount}"></td>
+                    <td>
+                        <span th:if="${item.status == 1}" class="badge badge-success">上架</span>
+                        <span th:if="${item.status == 0}" class="badge badge-danger">下架</span>
+                    </td>
+                    <td>
+                        <a th:href="@{/reward/edit/{id}(id=${item.id})}" class="btn-link">编辑</a>
+                        <a href="javascript:void(0);" th:onclick="'toggleStatus(' + ${item.id} + ',' + ${item.status} + ')'" class="btn-link">
+                            <span th:if="${item.status == 1}">下架</span>
+                            <span th:if="${item.status == 0}">上架</span>
+                        </a>
+                        <a href="javascript:void(0);" th:onclick="'deleteItem(' + ${item.id} + ')'" class="btn-link text-danger">删除</a>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(items)}">
+                    <td colspan="9" class="text-center">暂无数据</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        function toggleStatus(id, currentStatus) {
+            var newStatus = currentStatus === 1 ? 0 : 1;
+            var msg = newStatus === 1 ? '确定要上架该奖品吗？' : '确定要下架该奖品吗？';
+            if (confirm(msg)) {
+                $.ajax({
+                    url: '/reward/updateStatus/' + id,
+                    type: 'POST',
+                    data: { status: newStatus },
+                    success: function(res) {
+                        if (res.code === 200) {
+                            alert('操作成功');
+                            location.reload();
+                        } else {
+                            alert(res.message);
+                        }
+                    }
+                });
+            }
+        }
+
+        function deleteItem(id) {
+            if (confirm('确定要删除该奖品吗？删除后无法恢复！')) {
+                $.ajax({
+                    url: '/reward/delete/' + id,
+                    type: 'POST',
+                    success: function(res) {
+                        if (res.code === 200) {
+                            alert('删除成功');
+                            location.reload();
+                        } else {
+                            alert(res.message);
+                        }
+                    }
+                });
+            }
+        }
+
+        function updateStock(id, currentStock) {
+            var newStock = prompt('请输入新的库存数量：', currentStock);
+            if (newStock !== null && newStock !== '') {
+                newStock = parseInt(newStock);
+                if (isNaN(newStock) || newStock < 0) {
+                    alert('请输入有效的数字');
+                    return;
+                }
+
+                $.ajax({
+                    url: '/reward/updateStock/' + id,
+                    type: 'POST',
+                    data: { stock: newStock },
+                    success: function(res) {
+                        if (res.code === 200) {
+                            alert('库存更新成功');
+                            location.reload();
+                        } else {
+                            alert(res.message);
+                        }
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>

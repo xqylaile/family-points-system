@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>编辑成员</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>编辑成员</h2>
+            <a th:href="@{/member/list}" class="btn btn-secondary">返回列表</a>
+        </div>
+
+        <form id="memberForm" enctype="multipart/form-data" class="form">
+            <input type="hidden" name="id" th:value="${member.id}">
+
+            <div class="form-group">
+                <label>姓名 <span class="required">*</span></label>
+                <input type="text" name="name" th:value="${member.name}" required class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label>角色 <span class="required">*</span></label>
+                <input type="text" name="role" th:value="${member.role}" required class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label>年龄</label>
+                <input type="number" name="age" th:value="${member.age}" class="form-control" min="1" max="120">
+            </div>
+
+            <div class="form-group">
+                <label>成员类型 <span class="required">*</span></label>
+                <select name="memberType" required class="form-control">
+                    <option value="PARENT" th:selected="${member.memberType == 'PARENT'}">家长</option>
+                    <option value="CHILD" th:selected="${member.memberType == 'CHILD'}">小朋友</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>当前头像</label>
+                <div th:if="${member.avatar}">
+                    <img th:src="@{'/upload' + ${member.avatar}}" style="width: 100px; height: 100px; object-fit: cover;" alt="当前头像">
+                </div>
+                <div th:unless="${member.avatar}">暂无头像</div>
+            </div>
+
+            <div class="form-group">
+                <label>更换头像</label>
+                <input type="file" name="avatarFile" accept="image/*" class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label>积分信息（只读）</label>
+                <div class="info-box">
+                    <p>当前积分：<span th:text="${member.currentPoints}"></span></p>
+                    <p>累计获得：<span th:text="${member.totalEarnedPoints}"></span></p>
+                    <p>累计消费：<span th:text="${member.totalSpentPoints}"></span></p>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">保存</button>
+                <a th:href="@{/member/list}" class="btn btn-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $('#memberForm').on('submit', function(e) {
+            e.preventDefault();
+            var formData = new FormData(this);
+
+            $.ajax({
+                url: '/member/save',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(res) {
+                    if (res.code === 200) {
+                        alert('保存成功');
+                        window.location.href = '/member/list';
+                    } else {
+                        alert(res.message);
+                    }
+                },
+                error: function() {
+                    alert('操作失败，请稍后重试');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

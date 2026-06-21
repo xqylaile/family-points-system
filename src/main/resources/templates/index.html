@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>家庭积分系统</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .home-header {
+            text-align: center;
+            padding: 40px 0;
+            background: linear-gradient(135deg, #3C5A78 0%, #2E4760 100%);
+            color: #FFFFFF;
+            border-radius: 8px;
+            margin-bottom: 40px;
+        }
+        .home-header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .home-header p {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        .module-card {
+            background: #FFFFFF;
+            border: 2px solid #E7E3DA;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        .module-card:hover {
+            border-color: #3C5A78;
+            box-shadow: 0 6px 20px rgba(60, 90, 120, 0.15);
+            transform: translateY(-5px);
+        }
+        .module-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        .module-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1E2227;
+            margin-bottom: 10px;
+        }
+        .module-desc {
+            font-size: 14px;
+            color: #6B7077;
+            line-height: 1.6;
+        }
+        .notice-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 30px;
+            color: #856404;
+        }
+        .notice-box strong {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="home-header">
+            <h1>家庭积分系统</h1>
+            <p>让家庭生活更有趣，用积分管理激励成长</p>
+        </div>
+
+        <div th:if="${notice}" class="notice-box">
+            <strong>📢 系统公告：</strong><span th:text="${notice}"></span>
+        </div>
+
+        <div class="module-grid">
+            <a th:href="@{/member/list}" class="module-card">
+                <div class="module-icon">👨‍👩‍👧‍👦</div>
+                <div class="module-title">家庭成员管理</div>
+                <div class="module-desc">管理家庭成员信息，查看积分排行榜</div>
+            </a>
+
+            <a th:href="@{/rule/list}" class="module-card">
+                <div class="module-icon">📋</div>
+                <div class="module-title">积分规则管理</div>
+                <div class="module-desc">设置加分扣分规则，管理规则分类</div>
+            </a>
+
+            <a th:href="@{/record/add}" class="module-card">
+                <div class="module-icon">✏️</div>
+                <div class="module-title">积分变更</div>
+                <div class="module-desc">记录积分加减，查看变更历史</div>
+            </a>
+
+            <a th:href="@{/reward/list}" class="module-card">
+                <div class="module-icon">🎁</div>
+                <div class="module-title">奖品池管理</div>
+                <div class="module-desc">管理奖品信息，设置兑换积分</div>
+            </a>
+
+            <a th:href="@{/exchange/add}" class="module-card">
+                <div class="module-icon">🛒</div>
+                <div class="module-title">积分兑换</div>
+                <div class="module-desc">用积分兑换奖品，查看兑换记录</div>
+            </a>
+
+            <a th:href="@{/statistics/index}" class="module-card">
+                <div class="module-icon">📊</div>
+                <div class="module-title">统计报表</div>
+                <div class="module-desc">查看积分统计，分析家庭数据</div>
+            </a>
+
+            <a th:href="@{/record/list}" class="module-card">
+                <div class="module-icon">📝</div>
+                <div class="module-title">积分记录</div>
+                <div class="module-desc">查看所有积分变更记录</div>
+            </a>
+
+            <a th:href="@{/system/settings}" class="module-card">
+                <div class="module-icon">⚙️</div>
+                <div class="module-title">系统设置</div>
+                <div class="module-desc">配置系统参数，管理基础设置</div>
+            </a>
+        </div>
+
+        <div style="text-align: center; color: #6B7077; font-size: 14px; padding: 20px 0;">
+            <p>家庭积分系统 v1.0.0 | Powered by Spring Boot</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>积分变更记录</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>积分变更记录</h2>
+            <div class="actions">
+                <a th:href="@{/record/add}" class="btn btn-primary">积分变更</a>
+                <a th:href="@{/}" class="btn btn-secondary">返回首页</a>
+            </div>
+        </div>
+
+        <form method="get" action="/record/list" class="filter-bar">
+            <label>筛选条件：</label>
+            <select name="memberId" class="form-control" style="width: auto; display: inline-block;">
+                <option value="">全部成员</option>
+                <option th:each="member : ${members}" th:value="${member.id}"
+                        th:text="${member.name + ' (' + member.role + ')'}"
+                        th:selected="${memberId != null && memberId == member.id}"></option>
+            </select>
+            <input type="date" name="startDate" th:value="${startDate}" class="form-control"
+                   style="width: auto; display: inline-block; margin-left: 10px;" placeholder="开始日期">
+            <span style="margin: 0 5px;">至</span>
+            <input type="date" name="endDate" th:value="${endDate}" class="form-control"
+                   style="width: auto; display: inline-block;" placeholder="结束日期">
+            <button type="submit" class="btn btn-info" style="margin-left: 10px;">查询</button>
+            <a th:href="@{/record/list}" class="btn btn-secondary">重置</a>
+        </form>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>时间</th>
+                    <th>成员</th>
+                    <th>规则</th>
+                    <th>类型</th>
+                    <th>积分变化</th>
+                    <th>变更前</th>
+                    <th>变更后</th>
+                    <th>说明</th>
+                    <th>凭证</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="item : ${records}">
+                    <td th:text="${#temporals.format(item.record.createTime, 'yyyy-MM-dd HH:mm')}"></td>
+                    <td>
+                        <div th:text="${item.member.name}"></div>
+                        <small style="color: #6B7077;" th:text="${item.member.role}"></small>
+                    </td>
+                    <td th:text="${item.rule.ruleName}"></td>
+                    <td>
+                        <span th:if="${item.record.changeType == 'ADD'}" class="badge badge-success">加分</span>
+                        <span th:if="${item.record.changeType == 'DEDUCT'}" class="badge badge-danger">扣分</span>
+                    </td>
+                    <td class="text-bold">
+                        <span th:if="${item.record.changeType == 'ADD'}" style="color: #28a745;">+<span th:text="${item.record.pointValue}"></span></span>
+                        <span th:if="${item.record.changeType == 'DEDUCT'}" style="color: #dc3545;">-<span th:text="${item.record.pointValue}"></span></span>
+                    </td>
+                    <td th:text="${item.record.beforePoints}"></td>
+                    <td th:text="${item.record.afterPoints}"></td>
+                    <td>
+                        <span th:if="${item.record.remark}" th:text="${item.record.remark}"></span>
+                        <span th:unless="${item.record.remark}">-</span>
+                    </td>
+                    <td>
+                        <a th:if="${item.record.imagePath}" th:href="@{'/upload' + ${item.record.imagePath}}" target="_blank">查看</a>
+                        <span th:unless="${item.record.imagePath}">-</span>
+                    </td>
+                    <td>
+                        <span th:if="${item.record.status == 1}" class="badge badge-success">正常</span>
+                        <span th:if="${item.record.status == 0}" class="badge badge-danger">已撤销</span>
+                    </td>
+                    <td>
+                        <a th:if="${item.record.status == 1}" href="javascript:void(0);"
+                           th:onclick="'cancelRecord(' + ${item.record.id} + ')'" class="btn-link text-danger">撤销</a>
+                        <span th:if="${item.record.status == 0}">-</span>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(records)}">
+                    <td colspan="11" class="text-center">暂无数据</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        function cancelRecord(id) {
+            if (confirm('确定要撤销该记录吗？撤销后将恢复成员积分！')) {
+                $.ajax({
+                    url: '/record/cancel/' + id,
+                    type: 'POST',
+                    success: function(res) {
+                        if (res.code === 200) {
+                            alert('撤销成功');
+                            location.reload();
+                        } else {
+                            alert(res.message);
+                        }
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>

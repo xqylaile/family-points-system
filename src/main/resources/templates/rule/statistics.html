@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>规则使用统计</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>规则使用统计</h2>
+            <a th:href="@{/rule/list}" class="btn btn-secondary">返回列表</a>
+        </div>
+
+        <div class="stats-summary">
+            <div class="stat-card">
+                <div class="stat-title">加分规则</div>
+                <div class="stat-value" th:text="${#lists.size(#lists.filter(rules, r -> r.ruleType == 'ADD'))}"></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">扣分规则</div>
+                <div class="stat-value" th:text="${#lists.size(#lists.filter(rules, r -> r.ruleType == 'DEDUCT'))}"></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">启用规则</div>
+                <div class="stat-value" th:text="${#lists.size(#lists.filter(rules, r -> r.status == 1))}"></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">总使用次数</div>
+                <div class="stat-value" th:text="${#aggregates.sum(rules.![useCount])}"></div>
+            </div>
+        </div>
+
+        <h3 style="margin-top: 30px; margin-bottom: 15px;">规则使用排行（Top 10）</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>排名</th>
+                    <th>规则名称</th>
+                    <th>类型</th>
+                    <th>积分</th>
+                    <th>适用对象</th>
+                    <th>使用次数</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="rule, stat : ${#lists.sort(rules, (r1, r2) -> r2.useCount - r1.useCount)}" th:if="${stat.index < 10}">
+                    <td>
+                        <span th:if="${stat.index == 0}" class="rank-1">🥇</span>
+                        <span th:if="${stat.index == 1}" class="rank-2">🥈</span>
+                        <span th:if="${stat.index == 2}" class="rank-3">🥉</span>
+                        <span th:if="${stat.index >= 3}" th:text="${stat.index + 1}"></span>
+                    </td>
+                    <td th:text="${rule.ruleName}"></td>
+                    <td>
+                        <span th:if="${rule.ruleType == 'ADD'}" class="badge badge-success">加分</span>
+                        <span th:if="${rule.ruleType == 'DEDUCT'}" class="badge badge-danger">扣分</span>
+                    </td>
+                    <td class="text-bold">
+                        <span th:if="${rule.ruleType == 'ADD'}" style="color: #28a745;">+<span th:text="${rule.pointValue}"></span></span>
+                        <span th:if="${rule.ruleType == 'DEDUCT'}" style="color: #dc3545;">-<span th:text="${rule.pointValue}"></span></span>
+                    </td>
+                    <td>
+                        <span th:if="${rule.applyTo == 'PARENT'}" class="badge badge-info">家长</span>
+                        <span th:if="${rule.applyTo == 'CHILD'}" class="badge badge-warning">小朋友</span>
+                        <span th:if="${rule.applyTo == 'ALL'}" class="badge" style="background-color: #e0e0e0; color: #333;">通用</span>
+                    </td>
+                    <td class="text-bold" th:text="${rule.useCount}"></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(rules)}">
+                    <td colspan="6" class="text-center">暂无数据</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

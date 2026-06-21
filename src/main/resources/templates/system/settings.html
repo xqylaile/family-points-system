@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>系统设置</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>⚙️ 系统设置</h2>
+            <a th:href="@{/}" class="btn btn-secondary">返回首页</a>
+        </div>
+
+        <div class="form" style="max-width: 800px;">
+            <div class="form-group" th:each="config : ${configs}">
+                <label th:text="${config.configDesc}"></label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" th:id="'config_' + ${config.configKey}"
+                           th:value="${config.configValue}" class="form-control">
+                    <button type="button" class="btn btn-primary"
+                            th:onclick="'updateConfig(\'' + ${config.configKey} + '\')'">保存</button>
+                </div>
+                <small style="color: #6B7077; margin-top: 5px; display: block;">
+                    配置键：<span th:text="${config.configKey}"></span>
+                </small>
+            </div>
+
+            <div style="margin-top: 40px; padding: 20px; background-color: #F7F5F1; border-radius: 6px;">
+                <h3 style="margin-bottom: 15px;">系统信息</h3>
+                <p><strong>系统名称：</strong>家庭积分系统</p>
+                <p><strong>系统版本：</strong>v1.0.0</p>
+                <p><strong>开发框架：</strong>Spring Boot 2.7.18</p>
+                <p><strong>数据库：</strong>MySQL 8.0</p>
+            </div>
+
+            <div style="margin-top: 20px; padding: 20px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; color: #856404;">
+                <h3 style="margin-bottom: 15px;">⚠️ 使用说明</h3>
+                <ul style="line-height: 2;">
+                    <li>积分与金额换算比例：1积分 = 1元人民币</li>
+                    <li>系统公告会显示在首页顶部</li>
+                    <li>修改配置后立即生效，无需重启系统</li>
+                    <li>建议定期备份数据库数据</li>
+                </ul>
+            </div>
+
+            <div style="margin-top: 20px; padding: 20px; background-color: #d1ecf1; border: 1px solid #bee5eb; border-radius: 6px; color: #0c5460;">
+                <h3 style="margin-bottom: 15px;">💡 功能提示</h3>
+                <ul style="line-height: 2;">
+                    <li>成员管理：可以添加家庭成员，设置角色和类型</li>
+                    <li>规则管理：支持按成员类型设置不同的规则</li>
+                    <li>积分变更：支持上传凭证图片，可撤销错误记录</li>
+                    <li>奖品管理：支持设置库存，自动扣减</li>
+                    <li>积分兑换：自动扣减积分和库存，可撤销兑换</li>
+                    <li>统计报表：实时展示各项数据统计</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        function updateConfig(configKey) {
+            var configValue = $('#config_' + configKey).val();
+
+            if (!configValue) {
+                alert('配置值不能为空');
+                return;
+            }
+
+            $.ajax({
+                url: '/system/updateConfig',
+                type: 'POST',
+                data: {
+                    configKey: configKey,
+                    configValue: configValue
+                },
+                success: function(res) {
+                    if (res.code === 200) {
+                        alert('保存成功');
+                    } else {
+                        alert(res.message);
+                    }
+                },
+                error: function() {
+                    alert('操作失败，请稍后重试');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

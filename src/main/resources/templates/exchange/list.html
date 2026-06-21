@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>兑换记录</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>兑换记录</h2>
+            <div class="actions">
+                <a th:href="@{/exchange/add}" class="btn btn-primary">积分兑换</a>
+                <a th:href="@{/}" class="btn btn-secondary">返回首页</a>
+            </div>
+        </div>
+
+        <form method="get" action="/exchange/list" class="filter-bar">
+            <label>筛选条件：</label>
+            <select name="memberId" class="form-control" style="width: auto; display: inline-block;">
+                <option value="">全部成员</option>
+                <option th:each="member : ${members}" th:value="${member.id}"
+                        th:text="${member.name + ' (' + member.role + ')'}"
+                        th:selected="${memberId != null && memberId == member.id}"></option>
+            </select>
+            <input type="date" name="startDate" th:value="${startDate}" class="form-control"
+                   style="width: auto; display: inline-block; margin-left: 10px;" placeholder="开始日期">
+            <span style="margin: 0 5px;">至</span>
+            <input type="date" name="endDate" th:value="${endDate}" class="form-control"
+                   style="width: auto; display: inline-block;" placeholder="结束日期">
+            <button type="submit" class="btn btn-info" style="margin-left: 10px;">查询</button>
+            <a th:href="@{/exchange/list}" class="btn btn-secondary">重置</a>
+        </form>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>兑换时间</th>
+                    <th>成员</th>
+                    <th>奖品</th>
+                    <th>奖品图片</th>
+                    <th>数量</th>
+                    <th>消耗积分</th>
+                    <th>兑换状态</th>
+                    <th>备注</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="item : ${records}">
+                    <td th:text="${#temporals.format(item.record.createTime, 'yyyy-MM-dd HH:mm')}"></td>
+                    <td>
+                        <div th:text="${item.member.name}"></div>
+                        <small style="color: #6B7077;" th:text="${item.member.role}"></small>
+                    </td>
+                    <td th:text="${item.record.itemName}"></td>
+                    <td>
+                        <img th:if="${item.item != null && item.item.imagePath}"
+                             th:src="@{'/upload' + ${item.item.imagePath}}"
+                             style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" alt="奖品图片">
+                        <span th:if="${item.item == null || item.item.imagePath == null}">-</span>
+                    </td>
+                    <td th:text="${item.record.quantity}"></td>
+                    <td class="text-bold" style="color: #dc3545;">
+                        -<span th:text="${item.record.totalPoints}"></span>
+                    </td>
+                    <td>
+                        <span th:if="${item.record.exchangeStatus == 'EXCHANGED'}" class="badge badge-info">已兑换</span>
+                        <span th:if="${item.record.exchangeStatus == 'DELIVERED'}" class="badge badge-warning">已发放</span>
+                        <span th:if="${item.record.exchangeStatus == 'COMPLETED'}" class="badge badge-success">已完成</span>
+                    </td>
+                    <td>
+                        <span th:if="${item.record.remark}" th:text="${item.record.remark}"></span>
+                        <span th:unless="${item.record.remark}">-</span>
+                    </td>
+                    <td>
+                        <select th:id="'status_' + ${item.record.id}" class="form-control" style="width: auto; display: inline-block; font-size: 12px; padding: 4px 8px;"
+                                onchange="updateStatus(this)" th:attr="data-id=${item.record.id}">
+                            <option value="EXCHANGED" th:selected="${item.record.exchangeStatus == 'EXCHANGED'}">已兑换</option>
+                            <option value="DELIVERED" th:selected="${item.record.exchangeStatus == 'DELIVERED'}">已发放</option>
+                            <option value="COMPLETED" th:selected="${item.record.exchangeStatus == 'COMPLETED'}">已完成</option>
+                        </select>
+                        <a href="javascript:void(0);" th:onclick="'cancelExchange(' + ${item.record.id} + ')'"
+                           class="btn-link text-danger" style="margin-left: 10px;">撤销</a>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(records)}">
+                    <td colspan="9" class="text-center">暂无数据</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        function updateStatus(select) {
+            var id = $(select).attr('data-id');
+            var status = $(select).val();
+
+            $.ajax({
+                url: '/exchange/updateStatus/' + id,
+                type: 'POST',
+                data: { status: status },
+                success: function(res) {
+                    if (res.code === 200) {
+                        alert('状态更新成功');
+                        location.reload();
+                    } else {
+                        alert(res.message);
+                        location.reload();
+                    }
+                }
+            });
+        }
+
+        function cancelExchange(id) {
+            if (confirm('确定要撤销该兑换记录吗？撤销后将恢复成员积分和奖品库存！')) {
+                $.ajax({
+                    url: '/exchange/cancel/' + id,
+                    type: 'POST',
+                    success: function(res) {
+                        if (res.code === 200) {
+                            alert('撤销成功');
+                            location.reload();
+                        } else {
+                            alert(res.message);
+                        }
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>

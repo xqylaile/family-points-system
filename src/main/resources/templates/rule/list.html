@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>积分规则管理</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>积分规则管理</h2>
+            <div class="actions">
+                <a th:href="@{/rule/add}" class="btn btn-primary">添加规则</a>
+                <a th:href="@{/rule/statistics}" class="btn btn-info">规则统计</a>
+                <a th:href="@{/}" class="btn btn-secondary">返回首页</a>
+            </div>
+        </div>
+
+        <div class="filter-bar">
+            <label>筛选：</label>
+            <select id="ruleTypeFilter" class="form-control" style="width: auto; display: inline-block;">
+                <option value="">全部类型</option>
+                <option value="ADD">加分规则</option>
+                <option value="DEDUCT">扣分规则</option>
+            </select>
+            <select id="categoryFilter" class="form-control" style="width: auto; display: inline-block; margin-left: 10px;">
+                <option value="">全部分类</option>
+                <option value="学习类">学习类</option>
+                <option value="家务类">家务类</option>
+                <option value="行为习惯类">行为习惯类</option>
+                <option value="其他">其他</option>
+            </select>
+        </div>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>规则名称</th>
+                    <th>规则描述</th>
+                    <th>类型</th>
+                    <th>积分</th>
+                    <th>分类</th>
+                    <th>适用对象</th>
+                    <th>使用次数</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="ruleTableBody">
+                <tr th:each="rule : ${rules}" th:attr="data-type=${rule.ruleType}, data-category=${rule.category}">
+                    <td th:text="${rule.ruleName}"></td>
+                    <td th:text="${rule.ruleDesc}"></td>
+                    <td>
+                        <span th:if="${rule.ruleType == 'ADD'}" class="badge badge-success">加分</span>
+                        <span th:if="${rule.ruleType == 'DEDUCT'}" class="badge badge-danger">扣分</span>
+                    </td>
+                    <td class="text-bold">
+                        <span th:if="${rule.ruleType == 'ADD'}" style="color: #28a745;">+<span th:text="${rule.pointValue}"></span></span>
+                        <span th:if="${rule.ruleType == 'DEDUCT'}" style="color: #dc3545;">-<span th:text="${rule.pointValue}"></span></span>
+                    </td>
+                    <td th:text="${rule.category}"></td>
+                    <td>
+                        <span th:if="${rule.applyTo == 'PARENT'}" class="badge badge-info">家长</span>
+                        <span th:if="${rule.applyTo == 'CHILD'}" class="badge badge-warning">小朋友</span>
+                        <span th:if="${rule.applyTo == 'ALL'}" class="badge" style="background-color: #e0e0e0; color: #333;">通用</span>
+                    </td>
+                    <td th:text="${rule.useCount}"></td>
+                    <td>
+                        <span th:if="${rule.status == 1}" class="badge badge-success">启用</span>
+                        <span th:if="${rule.status == 0}" class="badge badge-danger">停用</span>
+                    </td>
+                    <td>
+                        <a th:href="@{/rule/edit/{id}(id=${rule.id})}" class="btn-link">编辑</a>
+                        <a href="javascript:void(0);" th:onclick="'toggleStatus(' + ${rule.id} + ',' + ${rule.status} + ')'" class="btn-link">
+                            <span th:if="${rule.status == 1}">停用</span>
+                            <span th:if="${rule.status == 0}">启用</span>
+                        </a>
+                        <a href="javascript:void(0);" th:onclick="'deleteRule(' + ${rule.id} + ')'" class="btn-link text-danger">删除</a>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(rules)}">
+                    <td colspan="9" class="text-center">暂无数据</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // 筛选功能
+        $('#ruleTypeFilter, #categoryFilter').on('change', function() {
+            var ruleType = $('#ruleTypeFilter').val();
+            var category = $('#categoryFilter').val();
+
+            $('#ruleTableBody tr').each(function() {
+                var row = $(this);
+                var rowType = row.attr('data-type');
+                var rowCategory = row.attr('data-category');
+
+                var typeMatch = !ruleType || rowType === ruleType;
+                var categoryMatch = !category || rowCategory === category;
+
+                if (typeMatch && categoryMatch) {
+                    row.show();
+                } else {
+                    row.hide();
+                }
+            });
+        });
+
+        function toggleStatus(id, currentStatus) {
+            var newStatus = currentStatus === 1 ? 0 : 1;
+            var msg = newStatus === 1 ? '确定要启用该规则吗？' : '确定要停用该规则吗？';
+            if (confirm(msg)) {
+                $.ajax({
+                    url: '/rule/updateStatus/' + id,
+                    type: 'POST',
+                    data: { status: newStatus },
+                    success: function(res) {
+                        if (res.code === 200) {
+                            alert('操作成功');
+                            location.reload();
+                        } else {
+                            alert(res.message);
+                        }
+                    }
+                });
+            }
+        }
+
+        function deleteRule(id) {
+            if (confirm('确定要删除该规则吗？删除后无法恢复！')) {
+                $.ajax({
+                    url: '/rule/delete/' + id,
+                    type: 'POST',
+                    success: function(res) {
+                        if (res.code === 200) {
+                            alert('删除成功');
+                            location.reload();
+                        } else {
+                            alert(res.message);
+                        }
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>

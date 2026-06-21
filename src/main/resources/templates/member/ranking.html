@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>积分排行榜</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>🏆 积分排行榜</h2>
+            <a th:href="@{/member/list}" class="btn btn-secondary">返回列表</a>
+        </div>
+
+        <div class="ranking-list">
+            <div class="ranking-item" th:each="member, stat : ${members}">
+                <div class="ranking-number">
+                    <span th:if="${stat.index == 0}" class="rank-1">🥇</span>
+                    <span th:if="${stat.index == 1}" class="rank-2">🥈</span>
+                    <span th:if="${stat.index == 2}" class="rank-3">🥉</span>
+                    <span th:if="${stat.index >= 3}" class="rank-other" th:text="${stat.index + 1}"></span>
+                </div>
+                <div class="ranking-avatar">
+                    <img th:if="${member.avatar}" th:src="@{'/upload' + ${member.avatar}}" alt="头像">
+                    <div th:unless="${member.avatar}" class="avatar-placeholder">👤</div>
+                </div>
+                <div class="ranking-info">
+                    <div class="ranking-name">
+                        <span th:text="${member.name}"></span>
+                        <span class="badge" th:classappend="${member.memberType == 'PARENT' ? 'badge-info' : 'badge-warning'}"
+                              th:text="${member.memberType == 'PARENT' ? '家长' : '小朋友'}"></span>
+                    </div>
+                    <div class="ranking-role" th:text="${member.role}"></div>
+                </div>
+                <div class="ranking-points">
+                    <div class="points-value" th:text="${member.currentPoints}"></div>
+                    <div class="points-label">当前积分</div>
+                </div>
+                <div class="ranking-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">累计获得：</span>
+                        <span class="stat-value" th:text="${member.totalEarnedPoints}"></span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">累计消费：</span>
+                        <span class="stat-value" th:text="${member.totalSpentPoints}"></span>
+                    </div>
+                </div>
+            </div>
+            <div th:if="${#lists.isEmpty(members)}" class="empty-message">
+                暂无数据
+            </div>
+        </div>
+    </div>
+</body>
+</html>

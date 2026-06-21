@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>积分变更</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>积分变更</h2>
+            <div class="actions">
+                <a th:href="@{/record/list}" class="btn btn-info">变更记录</a>
+                <a th:href="@{/}" class="btn btn-secondary">返回首页</a>
+            </div>
+        </div>
+
+        <form id="recordForm" enctype="multipart/form-data" class="form">
+            <div class="form-group">
+                <label>选择成员 <span class="required">*</span></label>
+                <select id="memberId" name="memberId" required class="form-control">
+                    <option value="">请选择</option>
+                    <option th:each="member : ${members}" th:value="${member.id}"
+                            th:text="${member.name + ' (' + member.role + ') - 当前积分：' + member.currentPoints}"
+                            th:attr="data-type=${member.memberType}"></option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>变更类型 <span class="required">*</span></label>
+                <select id="changeType" name="changeType" required class="form-control">
+                    <option value="">请选择</option>
+                    <option value="ADD">加分</option>
+                    <option value="DEDUCT">扣分</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>选择规则 <span class="required">*</span></label>
+                <select id="ruleId" name="ruleId" required class="form-control" disabled>
+                    <option value="">请先选择成员和变更类型</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>积分数值 <span class="required">*</span></label>
+                <input type="number" id="pointValue" name="pointValue" required class="form-control" min="1" readonly>
+                <small style="color: #6B7077;">选择规则后自动填充，可手动调整</small>
+            </div>
+
+            <div class="form-group">
+                <label>变更说明/备注</label>
+                <textarea name="remark" class="form-control" rows="3" placeholder="可选填写详细说明"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>凭证图片</label>
+                <input type="file" name="imageFile" accept="image/*" class="form-control">
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">确认变更</button>
+                <button type="reset" class="btn btn-secondary">重置</button>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // 当成员和变更类型都选择后，加载适用的规则
+        $('#memberId, #changeType').on('change', function() {
+            var memberId = $('#memberId').val();
+            var changeType = $('#changeType').val();
+
+            if (memberId && changeType) {
+                $.ajax({
+                    url: '/record/getRulesByMember',
+                    type: 'GET',
+                    data: { memberId: memberId, ruleType: changeType },
+                    success: function(res) {
+                        if (res.code === 200) {
+                            var rules = res.data;
+                            var ruleSelect = $('#ruleId');
+                            ruleSelect.empty();
+
+                            if (rules.length === 0) {
+                                ruleSelect.append('<option value="">暂无适用的规则</option>');
+                                ruleSelect.prop('disabled', true);
+                            } else {
+                                ruleSelect.append('<option value="">请选择规则</option>');
+                                rules.forEach(function(rule) {
+                                    var sign = changeType === 'ADD' ? '+' : '-';
+                                    ruleSelect.append('<option value="' + rule.id + '" data-point="' + rule.pointValue + '">' +
+                                        rule.ruleName + ' (' + sign + rule.pointValue + '分)' + '</option>');
+                                });
+                                ruleSelect.prop('disabled', false);
+                            }
+                        } else {
+                            alert(res.message);
+                        }
+                    }
+                });
+            } else {
+                $('#ruleId').empty().append('<option value="">请先选择成员和变更类型</option>').prop('disabled', true);
+            }
+
+            // 清空积分值
+            $('#pointValue').val('').prop('readonly', true);
+        });
+
+        // 选择规则后自动填充积分值
+        $('#ruleId').on('change', function() {
+            var selectedOption = $(this).find('option:selected');
+            var pointValue = selectedOption.attr('data-point');
+            if (pointValue) {
+                $('#pointValue').val(pointValue).prop('readonly', false);
+            } else {
+                $('#pointValue').val('').prop('readonly', true);
+            }
+        });
+
+        // 提交表单
+        $('#recordForm').on('submit', function(e) {
+            e.preventDefault();
+            var formData = new FormData(this);
+
+            $.ajax({
+                url: '/record/save',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(res) {
+                    if (res.code === 200) {
+                        alert('积分变更成功');
+                        window.location.reload();
+                    } else {
+                        alert(res.message);
+                    }
+                },
+                error: function() {
+                    alert('操作失败，请稍后重试');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

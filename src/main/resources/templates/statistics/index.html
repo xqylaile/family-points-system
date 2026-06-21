@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>统计报表</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>📊 统计报表</h2>
+            <a th:href="@{/}" class="btn btn-secondary">返回首页</a>
+        </div>
+
+        <!-- 总体统计 -->
+        <div class="stats-summary">
+            <div class="stat-card">
+                <div class="stat-title">家庭成员</div>
+                <div class="stat-value" th:text="${totalMembers}"></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">总积分余额</div>
+                <div class="stat-value" th:text="${totalPoints}"></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">累计获得</div>
+                <div class="stat-value" th:text="${totalEarned}"></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">累计消费</div>
+                <div class="stat-value" th:text="${totalSpent}"></div>
+            </div>
+        </div>
+
+        <!-- 成员积分排行 -->
+        <div style="margin-top: 40px;">
+            <h3 style="margin-bottom: 20px;">🏆 成员积分排行榜</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>排名</th>
+                        <th>成员</th>
+                        <th>当前积分</th>
+                        <th>累计获得</th>
+                        <th>累计消费</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="member, stat : ${memberRanking}">
+                        <td>
+                            <span th:if="${stat.index == 0}" class="rank-1">🥇</span>
+                            <span th:if="${stat.index == 1}" class="rank-2">🥈</span>
+                            <span th:if="${stat.index == 2}" class="rank-3">🥉</span>
+                            <span th:if="${stat.index >= 3}" th:text="${stat.index + 1}"></span>
+                        </td>
+                        <td>
+                            <div th:text="${member.name}"></div>
+                            <small style="color: #6B7077;" th:text="${member.role}"></small>
+                        </td>
+                        <td class="text-bold" style="color: #3C5A78;" th:text="${member.currentPoints}"></td>
+                        <td th:text="${member.totalEarnedPoints}"></td>
+                        <td th:text="${member.totalSpentPoints}"></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(memberRanking)}">
+                        <td colspan="5" class="text-center">暂无数据</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 热门奖品排行 -->
+        <div style="margin-top: 40px;">
+            <h3 style="margin-bottom: 20px;">🎁 热门奖品排行（Top 5）</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>排名</th>
+                        <th>奖品名称</th>
+                        <th>所需积分</th>
+                        <th>兑换次数</th>
+                        <th>当前库存</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="reward, stat : ${popularRewards}">
+                        <td th:text="${stat.index + 1}"></td>
+                        <td th:text="${reward.itemName}"></td>
+                        <td class="text-bold" style="color: #3C5A78;" th:text="${reward.requiredPoints} + ' 分'"></td>
+                        <td class="text-bold" th:text="${reward.exchangeCount}"></td>
+                        <td th:text="${reward.stock}"></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(popularRewards)}">
+                        <td colspan="5" class="text-center">暂无数据</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 最近积分变更 -->
+        <div style="margin-top: 40px;">
+            <h3 style="margin-bottom: 20px;">📝 最近积分变更（最近10条）</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>时间</th>
+                        <th>成员ID</th>
+                        <th>类型</th>
+                        <th>积分变化</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="record : ${recentRecords}">
+                        <td th:text="${#temporals.format(record.createTime, 'MM-dd HH:mm')}"></td>
+                        <td th:text="${record.memberId}"></td>
+                        <td>
+                            <span th:if="${record.changeType == 'ADD'}" class="badge badge-success">加分</span>
+                            <span th:if="${record.changeType == 'DEDUCT'}" class="badge badge-danger">扣分</span>
+                        </td>
+                        <td class="text-bold">
+                            <span th:if="${record.changeType == 'ADD'}" style="color: #28a745;">+<span th:text="${record.pointValue}"></span></span>
+                            <span th:if="${record.changeType == 'DEDUCT'}" style="color: #dc3545;">-<span th:text="${record.pointValue}"></span></span>
+                        </td>
+                        <td>
+                            <span th:if="${record.status == 1}" class="badge badge-success">正常</span>
+                            <span th:if="${record.status == 0}" class="badge badge-danger">已撤销</span>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(recentRecords)}">
+                        <td colspan="5" class="text-center">暂无数据</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 最近兑换记录 -->
+        <div style="margin-top: 40px;">
+            <h3 style="margin-bottom: 20px;">🛒 最近兑换记录（最近10条）</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>时间</th>
+                        <th>成员ID</th>
+                        <th>奖品</th>
+                        <th>数量</th>
+                        <th>消耗积分</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="exchange : ${recentExchanges}">
+                        <td th:text="${#temporals.format(exchange.createTime, 'MM-dd HH:mm')}"></td>
+                        <td th:text="${exchange.memberId}"></td>
+                        <td th:text="${exchange.itemName}"></td>
+                        <td th:text="${exchange.quantity}"></td>
+                        <td class="text-bold" style="color: #dc3545;" th:text="'-' + ${exchange.totalPoints}"></td>
+                        <td>
+                            <span th:if="${exchange.exchangeStatus == 'EXCHANGED'}" class="badge badge-info">已兑换</span>
+                            <span th:if="${exchange.exchangeStatus == 'DELIVERED'}" class="badge badge-warning">已发放</span>
+                            <span th:if="${exchange.exchangeStatus == 'COMPLETED'}" class="badge badge-success">已完成</span>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(recentExchanges)}">
+                        <td colspan="6" class="text-center">暂无数据</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

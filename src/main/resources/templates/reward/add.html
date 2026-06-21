@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>添加奖品</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>添加奖品</h2>
+            <a th:href="@{/reward/list}" class="btn btn-secondary">返回列表</a>
+        </div>
+
+        <form id="rewardForm" enctype="multipart/form-data" class="form">
+            <div class="form-group">
+                <label>奖品名称 <span class="required">*</span></label>
+                <input type="text" name="itemName" required class="form-control" placeholder="如：玩具小汽车、零食礼包等">
+            </div>
+
+            <div class="form-group">
+                <label>奖品描述</label>
+                <textarea name="itemDesc" class="form-control" rows="3" placeholder="详细描述奖品信息"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>所需积分 <span class="required">*</span></label>
+                <input type="number" name="requiredPoints" required class="form-control" min="1" placeholder="兑换该奖品所需的积分">
+                <small style="color: #6B7077;">提示：1积分 = 1元</small>
+            </div>
+
+            <div class="form-group">
+                <label>库存数量 <span class="required">*</span></label>
+                <input type="number" name="stock" required class="form-control" min="0" value="0" placeholder="奖品库存数量">
+            </div>
+
+            <div class="form-group">
+                <label>奖品分类</label>
+                <select name="category" class="form-control">
+                    <option value="玩具">玩具</option>
+                    <option value="零食">零食</option>
+                    <option value="特权">特权</option>
+                    <option value="现金">现金</option>
+                    <option value="其他">其他</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>奖品图片</label>
+                <input type="file" name="imageFile" accept="image/*" class="form-control">
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">保存</button>
+                <a th:href="@{/reward/list}" class="btn btn-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $('#rewardForm').on('submit', function(e) {
+            e.preventDefault();
+            var formData = new FormData(this);
+
+            $.ajax({
+                url: '/reward/save',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(res) {
+                    if (res.code === 200) {
+                        alert('保存成功');
+                        window.location.href = '/reward/list';
+                    } else {
+                        alert(res.message);
+                    }
+                },
+                error: function() {
+                    alert('操作失败，请稍后重试');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
