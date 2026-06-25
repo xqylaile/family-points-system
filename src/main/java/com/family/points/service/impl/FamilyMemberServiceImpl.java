@@ -48,9 +48,6 @@ public class FamilyMemberServiceImpl extends ServiceImpl<FamilyMemberMapper, Fam
             member.setTotalEarnedPoints(member.getTotalEarnedPoints() + pointChange);
         } else {
             newPoints = currentPoints - pointChange;
-            if (newPoints < 0) {
-                throw new RuntimeException("积分不足，扣分失败");
-            }
         }
 
         member.setCurrentPoints(newPoints);

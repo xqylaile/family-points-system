@@ -51,9 +51,6 @@ public class PointRecordServiceImpl extends ServiceImpl<PointRecordMapper, Point
         if (Constants.RULE_TYPE_ADD.equals(record.getChangeType())) {
             record.setAfterPoints(member.getCurrentPoints() + record.getPointValue());
         } else {
-            if (member.getCurrentPoints() < record.getPointValue()) {
-                throw new RuntimeException("积分不足，无法扣分");
-            }
             record.setAfterPoints(member.getCurrentPoints() - record.getPointValue());
         }
 
