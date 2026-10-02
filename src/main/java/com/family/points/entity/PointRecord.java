@@ -32,6 +32,8 @@ public class PointRecord {
 
     private Integer status;
 
+    private Long settlementId;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 

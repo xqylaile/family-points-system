@@ -20,6 +20,18 @@ public interface FamilyMemberService extends IService<FamilyMember> {
     List<FamilyMember> getRanking();
 
     /**
+     * 在现有事务内锁定成员，所有积分写入必须先取得该锁
+     */
+    FamilyMember getByIdForUpdate(Long memberId);
+
+    /**
+     * 保存成员资料，不接受客户端修改积分字段
+     */
+    void saveProfile(FamilyMember member);
+
+    void updateStatus(Long memberId, Integer status);
+
+    /**
      * 更新成员积分
      */
     void updatePoints(Long memberId, Integer pointChange, String changeType);

@@ -24,6 +24,9 @@ public class FamilyMember {
 
     private Integer currentPoints;
 
+    @TableField(exist = false)
+    private Integer rankNo;
+
     private Integer totalEarnedPoints;
 
     private Integer totalSpentPoints;

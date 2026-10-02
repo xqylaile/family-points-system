@@ -11,6 +11,7 @@
             <h2>积分变更记录</h2>
             <div class="actions">
                 <a th:href="@{/record/add}" class="btn btn-primary">积分变更</a>
+                <a th:href="@{/settlement/list}" class="btn btn-info">结算日志</a>
                 <a th:href="@{/}" class="btn btn-secondary">返回首页</a>
             </div>
         </div>
@@ -75,13 +76,15 @@
                         <span th:unless="${item.record.imagePath}">-</span>
                     </td>
                     <td>
-                        <span th:if="${item.record.status == 1}" class="badge badge-success">正常</span>
+                        <span th:if="${item.record.status == 1 && item.record.settlementId == null}" class="badge badge-success">正常</span>
+                        <span th:if="${item.record.settlementId != null}" class="badge badge-info">已结算</span>
                         <span th:if="${item.record.status == 0}" class="badge badge-danger">已撤销</span>
                     </td>
                     <td>
-                        <a th:if="${item.record.status == 1}" href="javascript:void(0);"
+                        <a th:if="${item.record.status == 1 && item.record.settlementId == null}" href="javascript:void(0);"
                            th:onclick="'cancelRecord(' + ${item.record.id} + ')'" class="btn-link text-danger">撤销</a>
-                        <span th:if="${item.record.status == 0}">-</span>
+                        <span th:if="${item.record.settlementId != null}">已结算，不可撤销</span>
+                        <span th:if="${item.record.status == 0 && item.record.settlementId == null}">-</span>
                     </td>
                 </tr>
                 <tr th:if="${#lists.isEmpty(records)}">

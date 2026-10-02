@@ -80,8 +80,9 @@
                             <option value="DELIVERED" th:selected="${item.record.exchangeStatus == 'DELIVERED'}">已发放</option>
                             <option value="COMPLETED" th:selected="${item.record.exchangeStatus == 'COMPLETED'}">已完成</option>
                         </select>
-                        <a href="javascript:void(0);" th:onclick="'cancelExchange(' + ${item.record.id} + ')'"
+                        <a th:if="${item.record.settlementId == null}" href="javascript:void(0);" th:onclick="'cancelExchange(' + ${item.record.id} + ')'"
                            class="btn-link text-danger" style="margin-left: 10px;">撤销</a>
+                        <span th:if="${item.record.settlementId != null}" class="badge badge-info">已结算，不可撤销</span>
                     </td>
                 </tr>
                 <tr th:if="${#lists.isEmpty(records)}">

@@ -35,10 +35,7 @@ public class PointRecordServiceImpl extends ServiceImpl<PointRecordMapper, Point
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void addPointRecord(PointRecord record) {
-        FamilyMember member = familyMemberService.getById(record.getMemberId());
-        if (member == null) {
-            throw new RuntimeException("成员不存在");
-        }
+        FamilyMember member = familyMemberService.getByIdForUpdate(record.getMemberId());
 
         PointRule rule = pointRuleService.getById(record.getRuleId());
         if (rule == null) {
@@ -54,8 +51,13 @@ public class PointRecordServiceImpl extends ServiceImpl<PointRecordMapper, Point
             record.setAfterPoints(member.getCurrentPoints() - record.getPointValue());
         }
 
+        record.setId(null);
+        record.setSettlementId(null);
+        record.setDeleted(0);
         record.setStatus(1);
-        save(record);
+        if (!save(record)) {
+            throw new RuntimeException("保存积分记录失败");
+        }
 
         // 更新成员积分
         familyMemberService.updatePoints(record.getMemberId(), record.getPointValue(), record.getChangeType());
@@ -72,23 +74,34 @@ public class PointRecordServiceImpl extends ServiceImpl<PointRecordMapper, Point
             throw new RuntimeException("记录不存在");
         }
 
+        // 先锁成员，再锁记录并重新读取状态，避免跨结算或重复撤销。
+        FamilyMember member = familyMemberService.getByIdForUpdate(record.getMemberId());
+        record = baseMapper.selectByIdForUpdate(recordId);
+        if (record == null) {
+            throw new RuntimeException("记录不存在");
+        }
+        if (record.getSettlementId() != null) {
+            throw new RuntimeException("该记录已参与月度结算，不能撤销");
+        }
         if (record.getStatus() == 0) {
             throw new RuntimeException("该记录已撤销");
         }
 
-        // 撤销记录状态
         record.setStatus(0);
-        updateById(record);
+        if (!updateById(record)) {
+            throw new RuntimeException("撤销记录失败");
+        }
 
         // 恢复成员积分
-        FamilyMember member = familyMemberService.getById(record.getMemberId());
         if (Constants.RULE_TYPE_ADD.equals(record.getChangeType())) {
             member.setCurrentPoints(member.getCurrentPoints() - record.getPointValue());
             member.setTotalEarnedPoints(member.getTotalEarnedPoints() - record.getPointValue());
         } else {
             member.setCurrentPoints(member.getCurrentPoints() + record.getPointValue());
         }
-        familyMemberService.updateById(member);
+        if (!familyMemberService.updateById(member)) {
+            throw new RuntimeException("恢复成员积分失败");
+        }
     }
 
     @Override

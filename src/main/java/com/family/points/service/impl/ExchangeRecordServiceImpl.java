@@ -1,6 +1,7 @@
 package com.family.points.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.family.points.common.Constants;
 import com.family.points.entity.ExchangeRecord;
@@ -35,10 +36,7 @@ public class ExchangeRecordServiceImpl extends ServiceImpl<ExchangeRecordMapper,
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void exchangeReward(Long memberId, Long itemId, Integer quantity) {
-        FamilyMember member = familyMemberService.getById(memberId);
-        if (member == null) {
-            throw new RuntimeException("成员不存在");
-        }
+        FamilyMember member = familyMemberService.getByIdForUpdate(memberId);
 
         RewardItem item = rewardItemService.getById(itemId);
         if (item == null) {
@@ -66,12 +64,16 @@ public class ExchangeRecordServiceImpl extends ServiceImpl<ExchangeRecordMapper,
         record.setQuantity(quantity);
         record.setTotalPoints(totalPoints);
         record.setExchangeStatus(Constants.EXCHANGE_STATUS_EXCHANGED);
-        save(record);
+        if (!save(record)) {
+            throw new RuntimeException("保存兑换记录失败");
+        }
 
         // 扣减积分
         member.setCurrentPoints(member.getCurrentPoints() - totalPoints);
         member.setTotalSpentPoints(member.getTotalSpentPoints() + totalPoints);
-        familyMemberService.updateById(member);
+        if (!familyMemberService.updateById(member)) {
+            throw new RuntimeException("扣减成员积分失败");
+        }
 
         // 减少库存
         rewardItemService.decreaseStock(itemId, quantity);
@@ -88,14 +90,26 @@ public class ExchangeRecordServiceImpl extends ServiceImpl<ExchangeRecordMapper,
             throw new RuntimeException("兑换记录不存在");
         }
 
-        // 删除记录（逻辑删除）
-        removeById(recordId);
+        // 与结算保持相同锁顺序，并使用锁定后读到的最新记录。
+        FamilyMember member = familyMemberService.getByIdForUpdate(record.getMemberId());
+        record = baseMapper.selectByIdForUpdate(recordId);
+        if (record == null) {
+            throw new RuntimeException("兑换记录不存在或已撤销");
+        }
+        if (record.getSettlementId() != null) {
+            throw new RuntimeException("该兑换已参与月度结算，不能撤销");
+        }
+
+        if (!removeById(recordId)) {
+            throw new RuntimeException("撤销兑换失败");
+        }
 
         // 恢复积分
-        FamilyMember member = familyMemberService.getById(record.getMemberId());
         member.setCurrentPoints(member.getCurrentPoints() + record.getTotalPoints());
         member.setTotalSpentPoints(member.getTotalSpentPoints() - record.getTotalPoints());
-        familyMemberService.updateById(member);
+        if (!familyMemberService.updateById(member)) {
+            throw new RuntimeException("恢复成员积分失败");
+        }
 
         // 恢复库存
         rewardItemService.restoreStock(record.getItemId(), record.getQuantity());
@@ -109,8 +123,10 @@ public class ExchangeRecordServiceImpl extends ServiceImpl<ExchangeRecordMapper,
             throw new RuntimeException("兑换记录不存在");
         }
 
-        record.setExchangeStatus(status);
-        updateById(record);
+        if (!update(new LambdaUpdateWrapper<ExchangeRecord>()
+                .eq(ExchangeRecord::getId, recordId).set(ExchangeRecord::getExchangeStatus, status))) {
+            throw new RuntimeException("更新兑换状态失败");
+        }
     }
 
     @Override

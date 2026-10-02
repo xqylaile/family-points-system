@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>月度结算日志</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>月度结算日志</h2>
+            <div class="actions">
+                <a th:href="@{/member/ranking}" class="btn btn-primary">积分排行榜 / 结算</a>
+                <a th:href="@{/record/list}" class="btn btn-info">积分变更记录</a>
+                <a th:href="@{/}" class="btn btn-secondary">返回首页</a>
+            </div>
+        </div>
+
+        <form method="get" th:action="@{/settlement/list}" class="filter-bar">
+            <label for="month">结算月份：</label>
+            <input id="month" type="month" name="month" th:value="${month}" class="form-control"
+                   style="width: auto; display: inline-block;">
+            <button type="submit" class="btn btn-info">查询</button>
+            <a th:href="@{/settlement/list}" class="btn btn-secondary">全部月份</a>
+        </form>
+
+        <p>以下为结算时的快照，不随成员改名或新一轮记分变化。第3名（含并列）减半，其余名次保留原分；结算后当前积分归零。</p>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>结算月份</th>
+                    <th>成员</th>
+                    <th>排名</th>
+                    <th>结算前积分</th>
+                    <th>结算分数</th>
+                    <th>规则</th>
+                    <th>结算时间（北京时间）</th>
+                </tr>
+            </thead>
+            <tbody th:each="settlement : ${settlements}">
+                <tr th:each="detail : ${settlement.details}">
+                    <td th:text="${settlement.settlementMonth}"></td>
+                    <td th:text="${detail.memberName}"></td>
+                    <td th:text="${'第' + detail.rankNo + '名'}"></td>
+                    <td th:text="${detail.originalPoints}"></td>
+                    <td class="text-bold" th:text="${detail.settledPoints.stripTrailingZeros().toPlainString()}"></td>
+                    <td th:text="${detail.rankNo == 3 ? '第三名减半' : '保持原分'}"></td>
+                    <td th:text="${#temporals.format(settlement.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                </tr>
+            </tbody>
+            <tbody th:if="${#lists.isEmpty(settlements)}">
+                <tr><td colspan="7" class="text-center">暂无结算日志</td></tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

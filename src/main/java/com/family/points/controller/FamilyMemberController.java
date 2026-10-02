@@ -1,16 +1,15 @@
 package com.family.points.controller;
 
-import com.family.points.common.Constants;
 import com.family.points.common.Result;
 import com.family.points.entity.FamilyMember;
 import com.family.points.service.FamilyMemberService;
+import com.family.points.service.MonthlySettlementService;
 import com.family.points.util.FileUploadUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -22,6 +21,9 @@ public class FamilyMemberController {
 
     @Autowired
     private FamilyMemberService familyMemberService;
+
+    @Autowired
+    private MonthlySettlementService monthlySettlementService;
 
     /**
      * 成员列表页面
@@ -64,16 +66,7 @@ public class FamilyMemberController {
                 member.setAvatar(avatarPath);
             }
 
-            // 设置默认值
-            if (member.getId() == null) {
-                member.setCurrentPoints(0);
-                member.setTotalEarnedPoints(0);
-                member.setTotalSpentPoints(0);
-                member.setJoinDate(LocalDateTime.now());
-                member.setStatus(Constants.STATUS_ENABLED);
-            }
-
-            familyMemberService.saveOrUpdate(member);
+            familyMemberService.saveProfile(member);
             return Result.success();
         } catch (Exception e) {
             return Result.error(e.getMessage());
@@ -101,9 +94,7 @@ public class FamilyMemberController {
     @ResponseBody
     public Result<Void> updateStatus(@PathVariable Long id, @RequestParam Integer status) {
         try {
-            FamilyMember member = familyMemberService.getById(id);
-            member.setStatus(status);
-            familyMemberService.updateById(member);
+            familyMemberService.updateStatus(id, status);
             return Result.success();
         } catch (Exception e) {
             return Result.error(e.getMessage());
@@ -116,7 +107,10 @@ public class FamilyMemberController {
     @GetMapping("/ranking")
     public String ranking(Model model) {
         List<FamilyMember> members = familyMemberService.getRanking();
+        String month = monthlySettlementService.getSettlementMonth();
         model.addAttribute("members", members);
+        model.addAttribute("settlementMonth", month);
+        model.addAttribute("alreadySettled", monthlySettlementService.isSettled(month));
         return "member/ranking";
     }
 }

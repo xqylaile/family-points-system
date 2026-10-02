@@ -9,16 +9,28 @@
     <div class="container">
         <div class="header">
             <h2>🏆 积分排行榜</h2>
-            <a th:href="@{/member/list}" class="btn btn-secondary">返回列表</a>
+            <div class="actions">
+                <button id="settleButton" type="button" class="btn btn-primary"
+                        th:disabled="${alreadySettled || #lists.isEmpty(members)}"
+                        th:text="${alreadySettled ? settlementMonth + ' 已结算' : '月度结算（' + settlementMonth + '）'}"></button>
+                <a th:href="@{/settlement/list}" class="btn btn-info">结算日志</a>
+                <a th:href="@{/member/list}" class="btn btn-secondary">返回列表</a>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <p>按当前积分结算全部启用成员，同分并列。第3名（含并列）结算分数减半，其他名次保持原分；半分会保留。</p>
+            <p>结算月份为北京时间的上个月。保存日志后，参与成员的当前积分归零，累计获得/消费不变，已结算记录不能撤销。</p>
+            <p>请在新一轮记分前结算：系统取执行时的余额，不按记分日期拆分月份。同一月份只能结算一次。</p>
         </div>
 
         <div class="ranking-list">
-            <div class="ranking-item" th:each="member, stat : ${members}">
+            <div class="ranking-item" th:each="member : ${members}">
                 <div class="ranking-number">
-                    <span th:if="${stat.index == 0}" class="rank-1">🥇</span>
-                    <span th:if="${stat.index == 1}" class="rank-2">🥈</span>
-                    <span th:if="${stat.index == 2}" class="rank-3">🥉</span>
-                    <span th:if="${stat.index >= 3}" class="rank-other" th:text="${stat.index + 1}"></span>
+                    <span th:if="${member.rankNo == 1}" class="rank-1" aria-label="第1名">🥇</span>
+                    <span th:if="${member.rankNo == 2}" class="rank-2" aria-label="第2名">🥈</span>
+                    <span th:if="${member.rankNo == 3}" class="rank-3" aria-label="第3名">🥉</span>
+                    <span th:if="${member.rankNo > 3}" class="rank-other" th:text="${member.rankNo}"></span>
                 </div>
                 <div class="ranking-avatar">
                     <img th:if="${member.avatar}" th:src="@{'/upload' + ${member.avatar}}" alt="头像">
@@ -47,10 +59,38 @@
                     </div>
                 </div>
             </div>
-            <div th:if="${#lists.isEmpty(members)}" class="empty-message">
-                暂无数据
-            </div>
+            <div th:if="${#lists.isEmpty(members)}" class="empty-message">暂无数据</div>
         </div>
     </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script th:inline="javascript">
+        var settlementMonth = /*[[${settlementMonth}]]*/ '';
+        var settlementListUrl = /*[[@{/settlement/list}]]*/ '/settlement/list';
+        $('#settleButton').on('click', function() {
+            var button = $(this);
+            if (button.prop('disabled')) return;
+            if (!confirm('确定结算 ' + settlementMonth + ' 吗？\n按执行时当前积分排名，第3名结算分数减半。\n保存日志后所有启用成员的当前积分将归零，旧记录不能撤销。此操作不可撤回。')) return;
+            button.prop('disabled', true);
+            $.ajax({
+                url: /*[[@{/settlement/execute}]]*/ '/settlement/execute',
+                type: 'POST',
+                data: { month: settlementMonth },
+                success: function(res) {
+                    if (res.code === 200) {
+                        alert('结算成功，当前积分已清零');
+                        window.location.href = settlementListUrl + '?month=' + encodeURIComponent(settlementMonth);
+                    } else {
+                        alert(res.message);
+                        location.reload();
+                    }
+                },
+                error: function() {
+                    alert('请求未完成，请先查看结算日志确认结果，再刷新页面重试。');
+                    button.prop('disabled', false);
+                }
+            });
+        });
+    </script>
 </body>
 </html>

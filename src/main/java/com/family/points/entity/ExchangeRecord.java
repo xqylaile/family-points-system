@@ -28,6 +28,8 @@ public class ExchangeRecord {
 
     private String remark;
 
+    private Long settlementId;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 

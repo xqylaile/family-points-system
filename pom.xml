@@ -80,6 +80,13 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- 独立内存数据库，仅用于测试，不连接业务数据库 -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Spring Boot 测试 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

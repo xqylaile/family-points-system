@@ -51,6 +51,7 @@ CREATE TABLE `point_record` (
   `remark` VARCHAR(500) DEFAULT NULL COMMENT '变更说明/备注',
   `image_path` VARCHAR(255) DEFAULT NULL COMMENT '凭证图片路径',
   `status` TINYINT DEFAULT 1 COMMENT '状态（0-已撤销 1-正常）',
+  `settlement_id` BIGINT DEFAULT NULL COMMENT '结算批次，非空时禁止撤销',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除（0-未删除 1-已删除）',
@@ -86,6 +87,7 @@ CREATE TABLE `exchange_record` (
   `quantity` INT NOT NULL DEFAULT 1 COMMENT '兑换数量',
   `total_points` INT NOT NULL COMMENT '消耗总积分',
   `exchange_status` VARCHAR(20) DEFAULT 'EXCHANGED' COMMENT '兑换状态（EXCHANGED-已兑换/DELIVERED-已发放/COMPLETED-已完成）',
+  `settlement_id` BIGINT DEFAULT NULL COMMENT '结算批次，非空时禁止撤销',
   `remark` VARCHAR(500) DEFAULT NULL COMMENT '备注',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '兑换时间',
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -107,6 +109,28 @@ CREATE TABLE `system_config` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_config_key` (`config_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统配置表';
+
+-- 7. 月度结算批次
+CREATE TABLE `monthly_settlement` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `settlement_month` CHAR(7) NOT NULL COMMENT '结算月份，yyyy-MM',
+  `create_time` DATETIME NOT NULL COMMENT '实际结算时间（北京时间）',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_settlement_month` (`settlement_month`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='月度结算批次';
+
+-- 8. 月度结算明细
+CREATE TABLE `settlement_detail` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `settlement_id` BIGINT NOT NULL COMMENT '结算批次ID',
+  `member_id` BIGINT NOT NULL COMMENT '成员ID',
+  `member_name` VARCHAR(50) NOT NULL COMMENT '结算时成员姓名',
+  `rank_no` INT NOT NULL COMMENT '结算名次，同分并列',
+  `original_points` INT NOT NULL COMMENT '结算前积分',
+  `settled_points` DECIMAL(12,1) NOT NULL COMMENT '结算分数，第3名减半',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_settlement_member` (`settlement_id`, `member_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='月度结算明细';
 
 -- 插入默认系统配置
 INSERT INTO `system_config` (`config_key`, `config_value`, `config_desc`) VALUES
