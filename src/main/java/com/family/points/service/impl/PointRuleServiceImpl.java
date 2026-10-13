@@ -47,6 +47,15 @@ public class PointRuleServiceImpl extends ServiceImpl<PointRuleMapper, PointRule
     }
 
     @Override
+    public PointRule getByNameAndType(String ruleName, String ruleType) {
+        LambdaQueryWrapper<PointRule> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(PointRule::getRuleName, ruleName)
+                .eq(PointRule::getRuleType, ruleType)
+                .last("LIMIT 1");
+        return getOne(queryWrapper);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public void increaseUseCount(Long ruleId) {
         PointRule rule = getById(ruleId);

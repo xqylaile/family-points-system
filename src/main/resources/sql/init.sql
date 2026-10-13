@@ -43,7 +43,8 @@ CREATE TABLE `point_rule` (
 CREATE TABLE `point_record` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `member_id` BIGINT NOT NULL COMMENT '成员ID',
-  `rule_id` BIGINT NOT NULL COMMENT '规则ID',
+  `rule_id` BIGINT DEFAULT NULL COMMENT '规则ID（自定义规则未加入规则列表时为空）',
+  `custom_rule_name` VARCHAR(100) DEFAULT NULL COMMENT '自定义规则名称（规则未加入规则列表时记录）',
   `change_type` VARCHAR(20) NOT NULL COMMENT '变更类型（ADD-加分/DEDUCT-扣分）',
   `point_value` INT NOT NULL COMMENT '积分变化值',
   `before_points` INT NOT NULL COMMENT '变更前积分',

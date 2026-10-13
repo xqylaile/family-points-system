@@ -34,12 +34,23 @@ public class PointRecordServiceImpl extends ServiceImpl<PointRecordMapper, Point
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void addPointRecord(PointRecord record) {
+    public void addPointRecord(PointRecord record, PointRule customRule, boolean saveAsRule) {
+        if (record.getPointValue() == null || record.getPointValue() <= 0) {
+            throw new RuntimeException("积分数值必须大于0");
+        }
+
         FamilyMember member = familyMemberService.getByIdForUpdate(record.getMemberId());
 
-        PointRule rule = pointRuleService.getById(record.getRuleId());
-        if (rule == null) {
-            throw new RuntimeException("规则不存在");
+        if (customRule == null) {
+            // 选择已有规则
+            PointRule rule = pointRuleService.getById(record.getRuleId());
+            if (rule == null) {
+                throw new RuntimeException("规则不存在");
+            }
+            record.setCustomRuleName(null);
+        } else {
+            // 自定义规则，按是否加入规则列表分别处理
+            applyCustomRule(record, customRule, member, saveAsRule);
         }
 
         // 设置变更前后积分
@@ -62,8 +73,59 @@ public class PointRecordServiceImpl extends ServiceImpl<PointRecordMapper, Point
         // 更新成员积分
         familyMemberService.updatePoints(record.getMemberId(), record.getPointValue(), record.getChangeType());
 
-        // 增加规则使用次数
-        pointRuleService.increaseUseCount(record.getRuleId());
+        // 增加规则使用次数（自定义规则未加入规则列表时不参与统计）
+        if (record.getRuleId() != null) {
+            pointRuleService.increaseUseCount(record.getRuleId());
+        }
+    }
+
+    /**
+     * 处理自定义规则：加入规则列表时新建规则并关联，否则仅把规则名称记录在本次变更上
+     */
+    private void applyCustomRule(PointRecord record, PointRule customRule, FamilyMember member, boolean saveAsRule) {
+        String ruleName = customRule.getRuleName() == null ? "" : customRule.getRuleName().trim();
+        if (ruleName.isEmpty()) {
+            throw new RuntimeException("请填写自定义规则名称");
+        }
+
+        if (!saveAsRule) {
+            // 不加入规则列表，仅本次变更使用
+            record.setRuleId(null);
+            record.setCustomRuleName(ruleName);
+            return;
+        }
+
+        if (pointRuleService.getByNameAndType(ruleName, record.getChangeType()) != null) {
+            throw new RuntimeException("规则列表中已存在同名规则：" + ruleName + "，请直接选择该规则或换一个名称");
+        }
+
+        String applyTo = customRule.getApplyTo();
+        if (applyTo == null || applyTo.isEmpty()) {
+            // 未指定适用对象时，默认只适用于当前成员类型
+            applyTo = member.getMemberType();
+        }
+        if (!Constants.APPLY_TO_PARENT.equals(applyTo)
+                && !Constants.APPLY_TO_CHILD.equals(applyTo)
+                && !Constants.APPLY_TO_ALL.equals(applyTo)) {
+            throw new RuntimeException("适用对象不合法");
+        }
+
+        PointRule rule = new PointRule();
+        rule.setRuleName(ruleName);
+        rule.setRuleDesc(customRule.getRuleDesc());
+        rule.setRuleType(record.getChangeType());
+        rule.setPointValue(record.getPointValue());
+        rule.setCategory(customRule.getCategory());
+        rule.setApplyTo(applyTo);
+        rule.setStatus(Constants.STATUS_ENABLED);
+        rule.setUseCount(0);
+        rule.setDeleted(0);
+        if (!pointRuleService.save(rule)) {
+            throw new RuntimeException("保存自定义规则失败");
+        }
+
+        record.setRuleId(rule.getId());
+        record.setCustomRuleName(null);
     }
 
     @Override
@@ -140,8 +202,17 @@ public class PointRecordServiceImpl extends ServiceImpl<PointRecordMapper, Point
             FamilyMember member = familyMemberService.getById(record.getMemberId());
             map.put("member", member);
 
-            PointRule rule = pointRuleService.getById(record.getRuleId());
+            // 自定义规则未加入规则列表时 ruleId 为空，规则名称取记录上的自定义名称
+            PointRule rule = record.getRuleId() == null ? null : pointRuleService.getById(record.getRuleId());
             map.put("rule", rule);
+            map.put("custom", record.getRuleId() == null);
+            if (rule != null) {
+                map.put("ruleName", rule.getRuleName());
+            } else if (record.getCustomRuleName() != null && !record.getCustomRuleName().isEmpty()) {
+                map.put("ruleName", record.getCustomRuleName());
+            } else {
+                map.put("ruleName", "-");
+            }
 
             result.add(map);
         }

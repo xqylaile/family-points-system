@@ -63,18 +63,43 @@ public class PointRecordController {
 
     /**
      * 保存积分变更
+     *
+     * @param customRule         是否使用自定义规则
+     * @param customRuleName     自定义规则名称
+     * @param customRuleDesc     自定义规则描述
+     * @param customRuleCategory 自定义规则分类
+     * @param customRuleApplyTo  自定义规则适用对象（加入规则列表时生效）
+     * @param saveAsRule         自定义规则是否加入规则列表
      */
     @PostMapping("/save")
     @ResponseBody
-    public Result<Void> save(PointRecord record, @RequestParam(required = false) MultipartFile imageFile) {
+    public Result<Void> save(PointRecord record,
+                             @RequestParam(required = false) Boolean customRule,
+                             @RequestParam(required = false) String customRuleName,
+                             @RequestParam(required = false) String customRuleDesc,
+                             @RequestParam(required = false) String customRuleCategory,
+                             @RequestParam(required = false) String customRuleApplyTo,
+                             @RequestParam(required = false) Boolean saveAsRule,
+                             @RequestParam(required = false) MultipartFile imageFile) {
         try {
+            PointRule rule = null;
+            if (Boolean.TRUE.equals(customRule)) {
+                rule = new PointRule();
+                rule.setRuleName(customRuleName);
+                rule.setRuleDesc(customRuleDesc);
+                rule.setCategory(customRuleCategory);
+                rule.setApplyTo(customRuleApplyTo);
+            } else if (record.getRuleId() == null) {
+                return Result.error("请选择规则");
+            }
+
             // 上传凭证图片
             if (imageFile != null && !imageFile.isEmpty()) {
                 String imagePath = FileUploadUtil.upload(imageFile, "record");
                 record.setImagePath(imagePath);
             }
 
-            pointRecordService.addPointRecord(record);
+            pointRecordService.addPointRecord(record, rule, Boolean.TRUE.equals(saveAsRule));
             return Result.success();
         } catch (Exception e) {
             return Result.error(e.getMessage());

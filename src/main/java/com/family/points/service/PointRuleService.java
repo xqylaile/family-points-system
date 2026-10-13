@@ -25,6 +25,11 @@ public interface PointRuleService extends IService<PointRule> {
     List<PointRule> listByMemberType(String memberType, String ruleType);
 
     /**
+     * 根据规则名称和类型查询规则，用于自定义规则加入列表时的重名校验
+     */
+    PointRule getByNameAndType(String ruleName, String ruleType);
+
+    /**
      * 增加规则使用次数
      */
     void increaseUseCount(Long ruleId);

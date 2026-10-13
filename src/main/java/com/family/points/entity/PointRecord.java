@@ -18,6 +18,11 @@ public class PointRecord {
 
     private Long ruleId;
 
+    /**
+     * 自定义规则名称，规则未加入规则列表时使用（此时 ruleId 为空）
+     */
+    private String customRuleName;
+
     private String changeType;
 
     private Integer pointValue;

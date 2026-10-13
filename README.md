@@ -19,6 +19,7 @@
 ### 3. 积分变更管理
 - 积分加减操作
 - 根据成员类型自动过滤规则
+- 支持临时自定义规则，可选择是否加入规则列表
 - 上传凭证图片
 - 变更记录查询和撤销
 
@@ -91,6 +92,16 @@ mysql -u root -p family_points < src/main/resources/sql/upgrade_monthly_settleme
 ```
 
 此脚本只增加结算表和记录的结算标记，不修改现有积分。**已有数据库不要重跑 `init.sql`；新安装只执行 `init.sql`，不要再执行升级脚本。**
+
+### 已有数据库升级（自定义规则）
+
+积分变更支持自定义规则后，需要再执行一次增量脚本：
+
+```bash
+mysql -u root -p family_points < src/main/resources/sql/upgrade_custom_rule.sql
+```
+
+此脚本把 `point_record.rule_id` 改为可空，并新增 `custom_rule_name` 字段，用于记录未加入规则列表的自定义规则名称。
 
 ### 2. 修改配置
 

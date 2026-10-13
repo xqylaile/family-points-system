@@ -56,7 +56,10 @@
                         <div th:text="${item.member.name}"></div>
                         <small style="color: #6B7077;" th:text="${item.member.role}"></small>
                     </td>
-                    <td th:text="${item.rule.ruleName}"></td>
+                    <td>
+                        <span th:text="${item.ruleName}"></span>
+                        <span th:if="${item.custom}" class="badge badge-warning">自定义</span>
+                    </td>
                     <td>
                         <span th:if="${item.record.changeType == 'ADD'}" class="badge badge-success">加分</span>
                         <span th:if="${item.record.changeType == 'DEDUCT'}" class="badge badge-danger">扣分</span>

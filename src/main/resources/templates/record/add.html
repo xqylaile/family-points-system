@@ -40,12 +40,57 @@
                 <select id="ruleId" name="ruleId" required class="form-control" disabled>
                     <option value="">请先选择成员和变更类型</option>
                 </select>
+                <small style="color: #6B7077;">列表末尾可选择「自定义规则」手动填写</small>
+            </div>
+
+            <div id="customRuleBox" class="info-box" style="display: none; margin-bottom: 20px;">
+                <div class="form-group">
+                    <label>自定义规则名称 <span class="required">*</span></label>
+                    <input type="text" id="customRuleName" name="customRuleName" class="form-control"
+                           maxlength="100" placeholder="如：主动练琴、顶撞家长等">
+                </div>
+
+                <div class="form-group">
+                    <label>自定义规则描述</label>
+                    <textarea id="customRuleDesc" name="customRuleDesc" class="form-control" rows="2"
+                              maxlength="500" placeholder="可选填写具体要求"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>规则分类</label>
+                    <select id="customRuleCategory" name="customRuleCategory" class="form-control">
+                        <option value="学习类">学习类</option>
+                        <option value="家务类">家务类</option>
+                        <option value="行为习惯类">行为习惯类</option>
+                        <option value="其他" selected>其他</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>是否加入规则列表 <span class="required">*</span></label>
+                    <label style="display: inline-block; font-weight: 400; margin-right: 20px;">
+                        <input type="radio" name="saveAsRule" value="true"> 是，以后可直接选择
+                    </label>
+                    <label style="display: inline-block; font-weight: 400;">
+                        <input type="radio" name="saveAsRule" value="false" checked> 否，仅本次使用
+                    </label>
+                </div>
+
+                <div class="form-group" id="applyToGroup" style="display: none; margin-bottom: 0;">
+                    <label>适用对象 <span class="required">*</span></label>
+                    <select id="customRuleApplyTo" name="customRuleApplyTo" class="form-control">
+                        <option value="PARENT">家长</option>
+                        <option value="CHILD">小朋友</option>
+                        <option value="ALL">通用</option>
+                    </select>
+                    <small style="color: #6B7077;">默认跟随所选成员类型，加入列表后按此范围显示</small>
+                </div>
             </div>
 
             <div class="form-group">
                 <label>积分数值 <span class="required">*</span></label>
                 <input type="number" id="pointValue" name="pointValue" required class="form-control" min="1" readonly>
-                <small style="color: #6B7077;">选择规则后自动填充，可手动调整</small>
+                <small id="pointValueHint" style="color: #6B7077;">选择规则后自动填充，可手动调整</small>
             </div>
 
             <div class="form-group">
@@ -67,10 +112,15 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
+        // 规则下拉中“自定义规则”选项的值
+        var CUSTOM_RULE_VALUE = '__CUSTOM__';
+
         // 当成员和变更类型都选择后，加载适用的规则
         $('#memberId, #changeType').on('change', function() {
             var memberId = $('#memberId').val();
             var changeType = $('#changeType').val();
+
+            syncDefaultApplyTo();
 
             if (memberId && changeType) {
                 $.ajax({
@@ -82,19 +132,19 @@
                             var rules = res.data;
                             var ruleSelect = $('#ruleId');
                             ruleSelect.empty();
+                            ruleSelect.append('<option value="">' +
+                                (rules.length === 0 ? '暂无适用的规则，可自定义' : '请选择规则') + '</option>');
 
-                            if (rules.length === 0) {
-                                ruleSelect.append('<option value="">暂无适用的规则</option>');
-                                ruleSelect.prop('disabled', true);
-                            } else {
-                                ruleSelect.append('<option value="">请选择规则</option>');
-                                rules.forEach(function(rule) {
-                                    var sign = changeType === 'ADD' ? '+' : '-';
-                                    ruleSelect.append('<option value="' + rule.id + '" data-point="' + rule.pointValue + '">' +
-                                        rule.ruleName + ' (' + sign + rule.pointValue + '分)' + '</option>');
-                                });
-                                ruleSelect.prop('disabled', false);
-                            }
+                            rules.forEach(function(rule) {
+                                var sign = changeType === 'ADD' ? '+' : '-';
+                                ruleSelect.append('<option value="' + rule.id + '" data-point="' + rule.pointValue + '">' +
+                                    rule.ruleName + ' (' + sign + rule.pointValue + '分)' + '</option>');
+                            });
+
+                            // 没有可用规则时也允许自定义
+                            ruleSelect.append('<option value="' + CUSTOM_RULE_VALUE + '">+ 自定义规则</option>');
+                            ruleSelect.prop('disabled', false);
+                            toggleCustomRule();
                         } else {
                             alert(res.message);
                         }
@@ -102,6 +152,7 @@
                 });
             } else {
                 $('#ruleId').empty().append('<option value="">请先选择成员和变更类型</option>').prop('disabled', true);
+                toggleCustomRule();
             }
 
             // 清空积分值
@@ -110,8 +161,14 @@
 
         // 选择规则后自动填充积分值
         $('#ruleId').on('change', function() {
-            var selectedOption = $(this).find('option:selected');
-            var pointValue = selectedOption.attr('data-point');
+            toggleCustomRule();
+
+            // 自定义规则的积分由用户填写，无需回填
+            if ($(this).val() === CUSTOM_RULE_VALUE) {
+                return;
+            }
+
+            var pointValue = $(this).find('option:selected').attr('data-point');
             if (pointValue) {
                 $('#pointValue').val(pointValue).prop('readonly', false);
             } else {
@@ -119,10 +176,62 @@
             }
         });
 
+        // 是否加入规则列表
+        $('input[name="saveAsRule"]').on('change', toggleApplyTo);
+
+        // 切换自定义规则面板：隐藏时禁用面板内控件，避免空值随表单提交、必填项阻塞提交
+        function toggleCustomRule() {
+            var isCustom = $('#ruleId').val() === CUSTOM_RULE_VALUE;
+            var box = $('#customRuleBox');
+
+            box.toggle(isCustom);
+            box.find('input, select, textarea').prop('disabled', !isCustom);
+            $('#customRuleName').prop('required', isCustom);
+
+            if (isCustom) {
+                syncDefaultApplyTo();
+                toggleApplyTo();
+                $('#pointValue').val('').prop('readonly', false);
+                $('#pointValueHint').text('自定义规则请手动填写积分数值');
+            } else {
+                $('#pointValueHint').text('选择规则后自动填充，可手动调整');
+            }
+        }
+
+        // 适用对象只在加入规则列表时需要
+        function toggleApplyTo() {
+            var saveAsRule = $('input[name="saveAsRule"]:checked').val() === 'true';
+            $('#applyToGroup').toggle(saveAsRule);
+            $('#customRuleApplyTo').prop('disabled', !saveAsRule);
+        }
+
+        // 适用对象默认跟随所选成员的类型
+        function syncDefaultApplyTo() {
+            var memberType = $('#memberId').find('option:selected').attr('data-type');
+            if (memberType) {
+                $('#customRuleApplyTo').val(memberType);
+            }
+        }
+
+        // 重置后同步面板状态（原生重置在事件之后执行）
+        $('#recordForm').on('reset', function() {
+            setTimeout(function() {
+                $('#ruleId').empty().append('<option value="">请先选择成员和变更类型</option>').prop('disabled', true);
+                $('#pointValue').val('').prop('readonly', true);
+                toggleCustomRule();
+            }, 0);
+        });
+
         // 提交表单
         $('#recordForm').on('submit', function(e) {
             e.preventDefault();
             var formData = new FormData(this);
+
+            if ($('#ruleId').val() === CUSTOM_RULE_VALUE) {
+                // 自定义规则不提交规则ID，由后端根据自定义信息处理
+                formData.set('ruleId', '');
+                formData.set('customRule', 'true');
+            }
 
             $.ajax({
                 url: '/record/save',
@@ -143,6 +252,9 @@
                 }
             });
         });
+
+        // 初始化面板状态
+        toggleCustomRule();
     </script>
 </body>
 </html>
